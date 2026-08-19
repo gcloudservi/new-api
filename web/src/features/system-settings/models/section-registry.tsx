@@ -54,6 +54,10 @@ const MODELS_SECTIONS = [
               settings['global.chat_completions_to_responses_policy'],
               '{}'
             ),
+            responses_to_chat_completions_policy: formatJsonForEditor(
+              settings['global.responses_to_chat_completions_policy'],
+              '{}'
+            ),
           },
           general_setting: {
             ping_interval_enabled:
@@ -84,6 +88,8 @@ const MODELS_SECTIONS = [
             settings['monitor_setting.auto_test_channel_enabled'],
           'monitor_setting.auto_test_channel_minutes':
             settings['monitor_setting.auto_test_channel_minutes'],
+          'monitor_setting.channel_test_concurrency':
+            settings['monitor_setting.channel_test_concurrency'],
           'monitor_setting.channel_test_mode':
             settings['monitor_setting.channel_test_mode'],
         }}

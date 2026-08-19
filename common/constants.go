@@ -14,6 +14,11 @@ var StartTime = time.Now().Unix() // unit: second
 var Version = "v0.0.0"            // this hard coding will be replaced automatically when building, no need to manually change
 var SystemName = "New API"
 var Footer = ""
+
+// UserBannedMessage is optional administrator-controlled HTML shown when a
+// disabled account attempts to sign in. An empty value uses the translated
+// default message.
+var UserBannedMessage = ""
 var Logo = ""
 var TopUpLink = ""
 
@@ -195,6 +200,10 @@ var QuotaRemindEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 
+// SupportMessageLimit caps retained messages in each user's support thread.
+// It is configurable through the SupportMessageLimit system option.
+var SupportMessageLimit = 100
+
 var RetryTimes = 0
 
 //var RootUserEmail = ""
@@ -283,6 +292,10 @@ var (
 	// because a single login flow can legitimately make several redirects.
 	OAuthRateLimitNum            = 60
 	OAuthRateLimitDuration int64 = 10 * 60
+	// Redemption requests use a separate per-user bucket so normal critical
+	// operations cannot make valid codes fail due to a shared limit.
+	RedemptionRateLimitNum            = 60
+	RedemptionRateLimitDuration int64 = 20 * 60
 
 	UploadRateLimitNum            = 10
 	UploadRateLimitDuration int64 = 60

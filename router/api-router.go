@@ -102,7 +102,9 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.GET("/topup/info", controller.GetTopUpInfo)
 				selfRoute.GET("/topup/self", controller.GetUserTopUps)
-				selfRoute.POST("/topup", middleware.CriticalRateLimit(), middleware.CaptchaCheckRedemption(), controller.TopUp)
+				// Redemption is keyed to the authenticated user so one busy shared IP
+				// cannot exhaust the bucket for unrelated users.
+				selfRoute.POST("/topup", middleware.UserCriticalRateLimit("redemption"), middleware.CaptchaCheckRedemption(), controller.TopUp)
 				selfRoute.POST("/pay", middleware.CriticalRateLimit(), controller.RequestEpay)
 				selfRoute.POST("/amount", controller.RequestAmount)
 				selfRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.RequestStripePay)
@@ -188,6 +190,27 @@ func SetApiRouter(router *gin.Engine) {
 			subscriptionAdminRoute.DELETE("/user_subscriptions/:id", controller.AdminDeleteUserSubscription)
 		}
 
+		// In-console support inbox. Users have one persistent "服务支持" thread;
+		// administrators can browse threads and issue audited grants.
+		supportRoute := apiRouter.Group("/support")
+		supportRoute.Use(middleware.UserAuth())
+		{
+			supportRoute.GET("/unread", middleware.DisableCache(), controller.GetSupportUnread)
+			supportRoute.GET("/conversation", middleware.DisableCache(), controller.GetSupportConversation)
+			supportRoute.GET("/orders", middleware.DisableCache(), controller.GetSupportOrders)
+			supportRoute.POST("/messages", middleware.UploadRateLimit(), middleware.DisableCache(), controller.SendSupportMessage)
+		}
+		supportAdminRoute := apiRouter.Group("/support/admin")
+		supportAdminRoute.Use(middleware.AdminAuth())
+		{
+			supportAdminRoute.GET("/conversations", middleware.DisableCache(), controller.AdminListSupportConversations)
+			supportAdminRoute.GET("/conversations/:id", middleware.DisableCache(), controller.AdminGetSupportConversation)
+			supportAdminRoute.POST("/conversations/:id/messages", middleware.UploadRateLimit(), middleware.DisableCache(), controller.AdminSendSupportMessage)
+			supportAdminRoute.POST("/conversations/:id/grant-quota", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AdminGrantSupportQuota)
+			supportAdminRoute.POST("/conversations/:id/grant-subscription", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AdminGrantSupportSubscription)
+			supportAdminRoute.POST("/messages/:id/complete-order", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.AdminCompleteSupportOrder)
+		}
+
 		// Subscription payment callbacks (no auth)
 		apiRouter.POST("/subscription/epay/notify", anonymousRequestBodyLimit, controller.SubscriptionEpayNotify)
 		apiRouter.GET("/subscription/epay/notify", controller.SubscriptionEpayNotify)
@@ -251,8 +274,11 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.GET("/", controller.GetAllTokens)
 			tokenRoute.GET("/search", middleware.SearchRateLimit(), controller.SearchTokens)
 			tokenRoute.GET("/auto-groups", controller.GetTokenAutoGroups)
+			tokenRoute.GET("/:id/auto-routes", controller.GetTokenAutoRoutes)
+			tokenRoute.GET("/:id/auto-routes/status", controller.GetTokenAutoRouteStatus)
 			tokenRoute.GET("/:id", controller.GetToken)
 			tokenRoute.POST("/:id/key", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.GetTokenKey)
+			tokenRoute.POST("/:id/reset-used-quota", controller.ResetTokenUsedQuota)
 			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
