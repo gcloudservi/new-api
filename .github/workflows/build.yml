@@ -142,14 +142,24 @@ jobs:
         with:
           go-version: '>=1.25.1'
 
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: false
+
       - name: Build Backend (Termux arm64)
         env:
           GOOS: android
           GOARCH: arm64
-          CGO_ENABLED: "0"
+          CGO_ENABLED: "1"
         run: |
+          export CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
+          echo "Using CC=$CC"
           go mod download
-          go build -ldflags "-s -w -X 'new-api/common.Version=$VERSION'" -o new-api-$VERSION-termux-arm64
+          go build \
+            -ldflags "-s -w -X 'new-api/common.Version=$VERSION' -extldflags '-static'" \
+            -o new-api-$VERSION-termux-arm64
 
       - name: Generate checksums
         run: sha256sum new-api-*-termux-arm64 > checksums-termux.txt
