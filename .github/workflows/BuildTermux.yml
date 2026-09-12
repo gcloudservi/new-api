@@ -57,11 +57,13 @@ jobs:
         run: |
           SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           export CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang"
-          export CGO_LDFLAGS="-L$SYSROOT/usr/lib/aarch64-linux-android -L$SYSROOT/usr/lib -llog"
+          export CXX="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang++"
+          export CGO_LDFLAGS="-L$SYSROOT/usr/lib/aarch64-linux-android/21 -llog"
           echo "Using CC=$CC"
+          echo "Using CGO_LDFLAGS=$CGO_LDFLAGS"
           go mod download
           go build \
-            -ldflags "-s -w -X 'new-api/common.Version=$VERSION' -extldflags '-static'" \
+            -ldflags "-s -w -X 'new-api/common.Version=$VERSION'" \
             -o new-api-$VERSION-termux-arm64
 
       - name: Generate checksums
